@@ -103,7 +103,7 @@ class libcalendaring_itip
             $message = $this->compose_itip_message($event, $method, $rsvp);
         }
 
-        $mailto = rcube_idn_to_ascii($recipient['email']);
+        $mailto = rcube_utils::idn_to_ascii($recipient['email']);
 
         $headers = $message->headers();
         $headers['To'] = format_email_recipient($mailto, $recipient['name']);
@@ -212,7 +212,7 @@ class libcalendaring_itip
      */
     public function compose_itip_message($event, $method, $rsvp = true)
     {
-        $from = rcube_idn_to_ascii($this->sender['email']);
+        $from = rcube_utils::idn_to_ascii($this->sender['email']);
         $from_utf = rcube_utils::idn_to_utf8($from);
         $sender = format_email_recipient($from, $this->sender['name']);
 
