@@ -174,6 +174,8 @@ class caldav_driver extends calendar_driver
         $cal['caldav_url'] = self::_encode_url($cal["caldav_url"]);
         if(!isset($cal['color'])) $cal['color'] = 'cc0000';
 
+		$cal = $this->_expand_pass($cal);
+
         $calendars = $this->_autodiscover_calendars($this->_expand_pass($cal));
         $cal_ids = array();
 
@@ -319,6 +321,9 @@ class caldav_driver extends calendar_driver
             $prop['id']
         );
 
+	if ($this->rc->config->get('calendar_default_calendar') == $prop['id'])
+ 	    $this->rc->user->save_prefs(array('calendar_default_calendar' => null));
+	
         return $this->rc->db->affected_rows($query);
     }
 
@@ -1783,20 +1788,84 @@ class caldav_driver extends calendar_driver
     }
 
     /**
-     * Expand all "%p" occurrences in 'caldav_pass' element of calendar object
-     * properties array with RC (imap) password.
-     * Other elements are left untouched.
+     * Set RC (imap) password to the given calendar properties if their value is "%p".
      *
      * @param array List of properties
+     * @param array List of calendar properties to loop up
      * @return array List of properties, with expanded 'caldav_pass' attribute
      *
      */
-    private function _expand_pass($props)
+    private function _expand_pass($props, $names = array('caldav_pass'))
     {
-        if (isset($props['caldav_pass']))
-            $props['caldav_pass'] = str_replace('%p', $this->rc->get_user_password(), $props['caldav_pass']);
+        foreach($names as $name) {
+            if (isset($props[$name]) && $props[$name] === '%p')
+                $props[$name] = $this->rc->get_user_password();
+        }
 
         return $props;
+    }
+
+    /**
+     * Replace "%u" with RC (imap) user in the given calendar properties.
+     *
+     * @param array List of properties
+     * @param array List of calendar properties to loop up
+     * @return array List of properties, with expanded 'caldav_pass' attribute
+     *
+     */
+    private function _expand_user($props, $names = array('caldav_url', 'caldav_user'))
+    {
+        foreach($names as $name) {
+            if (isset($props[$name]))
+                $props[$name] = str_replace('%u', $this->rc->get_user_name(), $props[$name]);
+        }
+
+        return $props;
+    }
+
+    /**
+     * Add default (pre-installation provisioned) calendar. If calendars from 
+     * same url exist, insertion does not take place.  
+     *
+     * @param array $props
+     *    caldav_url: Absolute URL to calendar server collection
+     *    caldav_user: Username
+     *    caldav_pass: Password
+     *    color: Events color
+     *    showAlarms:  
+     * @return bool false on creation error, true otherwise
+     *    
+     */
+    public function insert_default_calendar($props)
+    {
+        $props = $this->_expand_user($props);
+
+        foreach ($this->list_calendars() as $cal) {
+            $vcal_info = $this->calendars[$cal['id']];
+            if ($vcal_info['url'] == self::_encode_url($props['caldav_url'])) {
+                return true;
+            }
+        }
+
+        return $this->create_calendar($props);
+    }
+
+    /**
+     * Returns true if the specified calendar is a preinstalled calendar, false otherwise.
+     *
+     * @param $cal
+     * @return bool
+     */
+    public function is_preinstalled_calendar($cal)
+    {
+        $preinstalled_calendars = $this->rc->config->get('calendar_preinstalled_calendars', array());
+        if (is_array($preinstalled_calendars)) foreach ($preinstalled_calendars as $props) {
+            $props = $this->_expand_user($props);
+            if($props['url'] == $cal['url'])
+                return true;
+        }
+
+        return false;
     }
 
     /**
