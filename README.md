@@ -1,3 +1,4 @@
+# Tested with Roundcube 1.3.8
 # Roundcube Calendar plugin with CalDAV support
 
 Using Kolab-plugins from https://git.kolab.org/ (based on v3.2.9)    
