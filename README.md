@@ -61,10 +61,18 @@ before they are stored into the database:
 
 Now we need to import the database tables for the database driver (these tables are also required
 for CalDAV!) and the caldav driver. Your database name (<db-name>) will usually be roundcubemail or roundcube.
+
+for mysql:
 Check with `mysql -e 'show databases;'`.
 
     $ mysql <db-name> < /var/www/htdocs/roundcube/plugins/calendar/drivers/database/SQL/mysql.initial.sql
     $ mysql <db-name> < /var/www/htdocs/roundcube/plugins/calendar/drivers/caldav/SQL/mysql.initial.sql
+
+for postgres:
+Check with `psql -l`.
+
+    $  psql -d <db-name> < /<path to roundcube>/plugins/calendar/drivers/database/SQL/postgres.initial.sql
+    $  psql -d <db-name> < /<path to roundcube>/plugins/calendar/drivers/caldav/SQL/postgres.initial.sql
 
 Finally enable the calendar plugin in your **global** roundcube `config.inc.php`:
 
